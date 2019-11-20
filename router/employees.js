@@ -1,7 +1,7 @@
 var Router = require('restify-router').Router;
 var router= new  Router();
 
-let knex=require("./../knexData").default;
+let knex=require("../knexData1").default;
 //GET
 
 router.get("", (req, res, next) => {

@@ -7,7 +7,7 @@ const {
   updatePrizeTotalForInvoice
 } = require("./../helper/productHelper");
 
-const knex = require("../knexData1").default;
+const knex = require("../knexData").default;
 
 //GET
 router.get("", (req, res, next) => {

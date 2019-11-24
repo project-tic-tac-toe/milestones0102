@@ -1,17 +1,17 @@
 const restify = require("restify");
-
-var server = restify.createServer();
+const server = restify.createServer();
 server.use(restify.plugins.bodyParser());
 
-var employeesRouter = require('./router/employees').default;
-var productsRouter = require('./router/products').default;
-var invoicesProductRouter = require('./router/invoices_product').default;
-var invoicesDetailProductRouter = require('./router/invoices_detail_product').default;
+const employeesRouter = require('./router/employees').default;
+const productsRouter = require('./router/products').default;
+const invoicesProductRouter = require('./router/invoices_product').default;
+const invoicesDetailProductRouter = require('./router/invoices_detail_product').default;
 
-var customersRouter = require('./router/customers').default;
-var roomsRouter = require('./router/rooms').default;
-var servicesRouter = require('./router/services').default;
-
+const customersRouter = require('./router/customers').default;
+const roomsRouter = require('./router/rooms').default;
+const servicesRouter = require('./router/services').default;
+const invoicesRoomRouter = require('./router/invoices_room').default;
+const invoicesDetailRoomRouter = require('./router/invoices_detail_room').default;
 
 server.get("/", (req, res, next) => {
   res.send({
@@ -27,6 +27,8 @@ invoicesDetailProductRouter.applyRoutes(server,"/invoices-detail-product");
 customersRouter.applyRoutes(server,"/customers");
 roomsRouter.applyRoutes(server,"/rooms");
 servicesRouter.applyRoutes(server,"/services");
+invoicesRoomRouter.applyRoutes(server,"/invoices-room");
+invoicesDetailRoomRouter.applyRoutes(server,"/invoices-detail-room");
 
 server.listen(process.env.PORT || 1299, () => {
   console.log(`${server.name} is listen at ${server.url}`);

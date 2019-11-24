@@ -1,6 +1,6 @@
 var Router = require("restify-router").Router;
 var router = new Router();
-
+const {getDataForTable} =require("./../helper/Helper.js");
 let knex = require("../knexData").default;
 
 // ================== SERVICE ==================
@@ -56,32 +56,40 @@ router.get("/:id", (request, response, next) => {
 
 //post (create) service
 router.post("", (request, response, next) => {
-  var name = request.body.name;
-  var prize = parseFloat(request.body.prize);
+  try {
+    var name = request.body.name;
+    var prize = parseFloat(request.body.prize);
 
-  knex
-    .insert({
-      name,
-      prize
-    })
-    .into("services")
-    .returning("id")
-    .then(id => {
-      response.send({
-        code: 1,
-        Message: `A new service with id ${id} has been created`,
-        debugMessage: `A new service with id ${id} has been created`,
-        data: id
+    if (isNaN(prize)) prize = null;
+    knex
+      .insert({
+        name,
+        prize
+      })
+      .into("services")
+      .returning("id")
+      .then(id => {
+        response.send({
+          code: 1,
+          Message: `A new service with id ${id} has been created`,
+          debugMessage: `A new service with id ${id} has been created`,
+          data: id
+        });
       });
+  } catch (error) {
+    response.send({
+      code: 0,
+      employeesMessage: "Not enough data fields",
+      debugMessage: "Not enough data fields",
+      data: ""
     });
+  }
 });
 
 //put (update) service
-router.put("/:id", (request, response, next) => {
+router.put("/:id",async (request, response, next) => {
   var foundID = parseInt(request.params.id);
-  var name = request.body.name;
-  var prize = parseFloat(request.body.prize);
-
+  
   if (isNaN(foundID)) {
     response.send({
       code: 0,
@@ -91,6 +99,21 @@ router.put("/:id", (request, response, next) => {
     });
     return;
   }
+  const dataOld=await getDataForTable(foundID,"services").then(res=>res);
+  if(dataOld===null)
+  {
+    response.send({
+      code: 0,
+      Message: `No service with id ${foundID}`,
+      debugMessage: "Found no service",
+      data: ""
+    });
+    return;
+  }
+  var name = request.body.name? request.body.name:dataOld.name;
+  var prize = parseFloat(request.body.prize);
+  if(isNaN(prize)) prize=dataOld.prize;
+  
 
   knex("services")
     .where({ id: foundID })

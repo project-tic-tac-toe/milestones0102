@@ -56,61 +56,55 @@ router.get("/:id", (request, response, next) => {
 
 //post (create) customer
 router.post("", (request, response, next) => {
-  var cmnd = parseInt(request.body.cmnd);
-  var name = request.body.name;
+  try {
+    var cmnd = parseInt(request.body.cmnd);
+    var name = request.body.name;
 
-  var year = parseInt(request.body.year);
-  var month = parseInt(request.body.month);
-  var day = parseInt(request.body.day);
-  var birth = new Date(year, month, day);
+    var year = parseInt(request.body.year);
+    var month = parseInt(request.body.month);
+    var day = parseInt(request.body.day);
+    var birth = new Date(year, month, day);
 
-  if (isNaN(year) || isNaN(month) || isNaN(year)) birth = null;
+    if (isNaN(year) || isNaN(month) || isNaN(year)) birth = null;
 
-  var gender = request.body.gender;
-  var phone = request.body.phone;
-  var email = request.body.email;
+    var gender = request.body.gender;
+    var phone = request.body.phone;
+    var email = request.body.email;
 
-  if (isNaN(cmnd)) cmnd = null;
+    if (isNaN(cmnd)) cmnd = null;
 
-  knex
-    .insert({
-      cmnd,
-      name,
-      birth,
-      gender,
-      phone,
-      email
-    })
-    .into("customers")
-    .returning("id")
-    .then(id => {
-      response.send({
-        code: 1,
-        Message: "A new customer has been created",
-        debugMessage: `New customer with id card ${id} has been created`,
-        data: id
+    knex
+      .insert({
+        cmnd,
+        name,
+        birth,
+        gender,
+        phone,
+        email
+      })
+      .into("customers")
+      .returning("id")
+      .then(id => {
+        response.send({
+          code: 1,
+          Message: "A new customer has been created",
+          debugMessage: `New customer with id card ${id} has been created`,
+          data: id
+        });
       });
+  } catch (error) {
+    response.send({
+      code: 0,
+      employeesMessage: "Not enough data fields",
+      debugMessage: "Not enough data fields",
+      data: ""
     });
+  }
 });
 
 //put (update) customer
-router.put("/:id", (request, response, next) => {
+router.put("/:id", async (request, response, next) => {
   var foundID = parseInt(request.params.id);
-  var name = request.body.name;
-
-  var cmnd = parseInt(Request.body.cmnd);
-  if (isNaN(cmnd)) cmnd = null;
-
-  var year = parseInt(request.body.year);
-  var month = parseInt(request.body.month);
-  var day = parseInt(request.body.day);
-  var birth = new Date(year, month, day);
-  if (isNaN(year) || isNaN(month) || isNaN(year)) birth = null;
-
-  var gender = request.body.gender;
-  var phone = request.body.phone;
-  var email = request.body.email;
-
   if (isNaN(foundID)) {
     response.send({
       code: 0,
@@ -121,8 +115,26 @@ router.put("/:id", (request, response, next) => {
     return;
   }
 
+  const dataOld = await getDataForTable(foundID, "customers").then(res => res);
+  if (dataOld === null) {
+    response.send({
+      code: 0,
+      Message: `No customer with id ${foundID}`,
+      debugMessage: "Found no customer",
+      data: ""
+    });
+    return;
+  }
+  var name = request.body.name ? request.body.name : dataOld.name;
+  var cmnd = parseInt(Request.body.cmnd);
+  if (isNaN(cmnd)) cmnd = dataOld.cmnd;
+  var birth = new Date(request.body.birth ? request.body.birth : dataOld.birth);
+  var gender = request.body.gender?request.body.gender:dataOld.gender;
+  var phone = request.body.phone?request.body.phone:dataOld.phone;
+  var email = request.body.email?request.body.email:dataOld.email;
+
   knex("customers")
-    .where({ cmnd: foundID })
+    .where({ id: foundID })
     .update({
       cmnd,
       name,

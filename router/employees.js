@@ -1,7 +1,7 @@
-var Router = require('restify-router').Router;
-var router= new  Router();
+var Router = require("restify-router").Router;
+var router = new Router();
 
-let knex=require("../knexData").default;
+let knex = require("../knexData").default;
 //GET
 
 router.get("", (req, res, next) => {
@@ -52,33 +52,39 @@ router.get("/:id", (req, res, next) => {
 //INSERT
 
 router.post("", (req, res, next) => {
-  let name = req.body.name;
-  let tel = req.body.tel;
+  try {
+    let name = req.body.name;
+    let tel = req.body.tel;
 
-  knex
-    .insert({
-      name,
-      tel
-    })
-    .into("employees")
-    .returning("id")
-    .then(id => {
-      res.send({
-        code: 1,
-        employeesMessage: "A new employee has been created",
-        debugMessage: `New employee with id ${id} has been created`,
-        data: id
+    knex
+      .insert({
+        name,
+        tel
+      })
+      .into("employees")
+      .returning("id")
+      .then(id => {
+        res.send({
+          code: 1,
+          employeesMessage: "A new employee has been created",
+          debugMessage: `New employee with id ${id} has been created`,
+          data: id
+        });
       });
+  } catch (error) {
+    res.send({
+      code: 0,
+      employeesMessage: "Not enough data fields",
+      debugMessage: "Not enough data fields",
+      data: ""
     });
+  }
 });
 
 //UPDATE
 
-router.put("/:id", (req, res, next) => {
+router.put("/:id",async (req, res, next) => {
   let idFind = parseInt(req.params.id);
-  let name = req.body.name;
-  let tel = req.body.tel;
-
   if (isNaN(idFind)) {
     res.send({
       code: 0,
@@ -88,6 +94,19 @@ router.put("/:id", (req, res, next) => {
     });
     return;
   }
+
+  const dataOld = await getDataForTable(idFind, "employees").then(res => res);
+  if (dataOld === null) {
+    res.send({
+      code: 0,
+      Message: `No employee with id ${idFind}`,
+      debugMessage: "Found no employee",
+      data: ""
+    });
+    return;
+  }
+  let name = req.body.name?req.body.name:dataOld.name;
+  let tel = req.body.tel?req.body.tel:dataOld.tel;
 
   knex("employees")
     .where({ id: idFind })
@@ -148,5 +167,4 @@ router.del("/:id", (req, res, next) => {
     });
 });
 
-
-exports.default=router
+exports.default = router;

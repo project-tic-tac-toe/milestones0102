@@ -5,11 +5,11 @@ let knex = require("../knexData").default;
 //GET
 
 router.get("", (req, res, next) => {
-  knex("invoices_product")
+  knex("invoices_room")
     .select("*")
     .then(invoices => {
       res.send({
-        invoicesMessage: "List of all invoices product",
+        invoicesMessage: "List of all invoices room",
         debugMessage: "Successful return ",
         data: { invoices }
       });
@@ -28,21 +28,21 @@ router.get("/:id", (req, res, next) => {
     });
     return;
   }
-  knex("invoices_product")
+  knex("invoices_room")
     .where({ id: id })
     .select("*")
     .then(invoices => {
       if (invoices.length === 0) {
         res.send({
           code: 0,
-          invoicesMessage: `No invoices product with id ${id}`,
-          debugMessage: "Found no invoices product",
+          invoicesMessage: `No invoices room with id ${id}`,
+          debugMessage: "Found no invoices room",
           data: { invoices }
         });
       } else
         res.send({
           code: 1,
-          invoicesMessage: "Found one invoices product",
+          invoicesMessage: "Found one invoices room",
           debugMessage: "Successful return ",
           data: { invoices }
         });
@@ -53,6 +53,15 @@ router.get("/:id", (req, res, next) => {
 
 router.post("", async (req, res, next) => {
   let id_customer = parseInt(req.body.id_customer);
+  let id_room = parseInt(req.body.id_room);
+  let date_arrival = null;
+  let date_department = null;
+
+  let temp = Date.parse(req.body.date_arrival);
+  if (!isNaN(temp)) date_arrival = new Date(temp);
+  temp = Date.parse(req.body.date_department);
+  if (!isNaN(temp)) date_department = new Date(temp);
+
   let create_at = new Date();
   let total = null;
 
@@ -75,14 +84,14 @@ router.post("", async (req, res, next) => {
       }
     } catch (error) {
       console.log(error);
+      return;
     }
   }
-  let id_employee = isNaN(parseInt(req.body.id_employee))
-    ? null
-    : parseInt(req.body.id_employee);
-  if (id_employee !== null) {
+
+  if (isNaN(id_room)) id_room = null;
+  if (id_room !== null) {
     try {
-      const result = await isCorrectId(id_employee, "employees")
+      const result = await isCorrectId(id_room, "rooms")
         .then(res => res)
         .catch(err => {
           throw new Error(err);
@@ -90,8 +99,8 @@ router.post("", async (req, res, next) => {
       if (!result) {
         res.send({
           code: 0,
-          employeesMessage: `No employee with id ${id_employee}`,
-          debugMessage: "Found no employee",
+          employeesMessage: `No room with id ${id_room}`,
+          debugMessage: "Found no room",
           data: ""
         });
         return;
@@ -103,17 +112,19 @@ router.post("", async (req, res, next) => {
   knex
     .insert({
       id_customer,
-      id_employee,
+      id_room,
+      date_arrival,
+      date_department,
       create_at,
       total
     })
-    .into("invoices_product")
+    .into("invoices_room")
     .returning("id")
     .then(id => {
       res.send({
         code: 1,
-        invoicesMessage: "A new invoices product has been created",
-        debugMessage: `New invoices product with id ${id} has been created`,
+        invoicesMessage: "A new invoices room has been created",
+        debugMessage: `New invoices room with id ${id} has been created`,
         data: id
       });
     });
@@ -123,12 +134,6 @@ router.post("", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   let idFind = parseInt(req.params.id);
-
-  let id_customer = parseInt(req.body.id_customer);
-  let create_at = new Date();
-
-  if (id_customer != req.body.id_customer) id_customer = null;
-
   if (isNaN(idFind)) {
     res.send({
       code: 0,
@@ -138,6 +143,33 @@ router.put("/:id", async (req, res, next) => {
     });
     return;
   }
+  const dataOld = await getDataForTable(idFind, "invoices_room").then(
+    res => res
+  );
+  if (dataOld === null) {
+    res.send({
+      code: 0,
+      invoicesMessage: `No  room with id ${idFind}`,
+      debugMessage: "Found no room",
+      data: ""
+    });
+    return;
+  }
+
+  let id_customer = parseInt(req.body.id_customer);
+  let id_room = parseInt(req.body.id_room);
+  let date_arrival = null;
+  let date_department = null;
+
+  let temp = Date.parse(req.body.date_arrival);
+  if (!isNaN(temp)) date_arrival = new Date(temp);
+  else date_arrival = dataOld.date_arrival;
+
+  temp = Date.parse(req.body.date_department);
+  if (!isNaN(temp)) date_department = new Date(temp);
+  else date_department = dataOld.date_department;
+
+  let create_at = new Date();
 
   if (isNaN(id_customer)) id_customer = null;
   if (id_customer !== null) {
@@ -158,14 +190,14 @@ router.put("/:id", async (req, res, next) => {
       }
     } catch (error) {
       console.log(error);
+      return;
     }
   }
-  let id_employee = isNaN(parseInt(req.body.id_employee))
-    ? null
-    : parseInt(req.body.id_employee);
-  if (id_employee !== null) {
+
+  if (isNaN(id_room)) id_room = null;
+  if (id_room !== null) {
     try {
-      const result = await isCorrectId(id_employee, "employees")
+      const result = await isCorrectId(id_room, "rooms")
         .then(res => res)
         .catch(err => {
           throw new Error(err);
@@ -173,8 +205,8 @@ router.put("/:id", async (req, res, next) => {
       if (!result) {
         res.send({
           code: 0,
-          employeesMessage: `No employee with id ${id_employee}`,
-          debugMessage: "Found no employee",
+          employeesMessage: `No room with id ${id_room}`,
+          debugMessage: "Found no room",
           data: ""
         });
         return;
@@ -183,41 +215,33 @@ router.put("/:id", async (req, res, next) => {
       console.log(error);
     }
   }
-  const dataOld = await getDataForTable(idFind, "invoices_product").then(
-    res => res
-  );
-  if (dataOld === null) {
-    res.send({
-      code: 0,
-      invoicesMessage: `No invoice product with id ${idFind}`,
-      debugMessage: "Found no invoice product",
-      data: ""
-    });
-    return;
-  }
-  if (id_customer === null) id_customer = dataOld.id_customer;
-  if (id_employee === null) id_employee = dataOld.id_employee;
-  knex("invoices_product")
+  if (id_room === null) id_room = dataOld.id_room;
+  if (id_customer === null) id_room = dataOld.id_customer;
+
+  knex("invoices_room")
     .where({ id: idFind })
     .update({
       id_customer,
-      id_employee,
-      create_at
+      id_room,
+      date_arrival,
+      date_department,
+      create_at,
+      total: dataOld.total
     })
     .returning("id")
     .then(id => {
       if (id.length === 0)
         res.send({
           code: 0,
-          invoicesMessage: `No invoice product with id ${idFind}`,
-          debugMessage: "Found no invoice product",
+          invoicesMessage: `No  room with id ${idFind}`,
+          debugMessage: "Found no room",
           data: id
         });
       else
         res.send({
           code: 1,
-          invoicesMessage: "A new invoices product has been updated",
-          debugMessage: `New invoices product with id ${id} has been updated`,
+          invoicesMessage: "A new invoices room has been updated",
+          debugMessage: `New invoices room with id ${id} has been updated`,
           data: id
         });
     });
@@ -236,22 +260,22 @@ router.del("/:id", (req, res, next) => {
     return;
   }
 
-  knex("invoices_product")
+  knex("invoices_room")
     .where({ id: idFind })
     .del()
     .then(result => {
       if (result === 0)
         res.send({
           code: result,
-          invoicesMessage: `No invoice product with id ${idFind}`,
-          debugMessage: "Found no invoice product",
+          invoicesMessage: `No invoice room with id ${idFind}`,
+          debugMessage: "Found no invoice room",
           data: ""
         });
       else
         res.send({
           code: result,
-          invoicesMessage: `A invoice product has been deleted`,
-          debugMessage: `A invoice product with id ${idFind} has been deleted`,
+          invoicesMessage: `A invoice room has been deleted`,
+          debugMessage: `A invoice room with id ${idFind} has been deleted`,
           data: ""
         });
     });

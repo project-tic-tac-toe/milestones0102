@@ -52,40 +52,43 @@ router.get("/:id", (req, res, next) => {
 //INSERT
 
 router.post("", (req, res, next) => {
-  let name = req.body.name;
-  let prize = parseFloat(req.body.prize);
-  let image = req.body.image;
+  try {
+    let name = req.body.name;
+    let prize = parseFloat(req.body.prize);
+    let image = req.body.image;
 
-  if (prize != req.body.prize) prize = null;
+    if (prize != req.body.prize) prize = null;
 
-  knex
-    .insert({
-      name,
-      prize,
-      image
-    })
-    .into("products")
-    .returning("id")
-    .then(id => {
-      res.send({
-        code: 1,
-        productsMessage: "A new product has been created",
-        debugMessage: `New product with id ${id} has been created`,
-        data: id
+    knex
+      .insert({
+        name,
+        prize,
+        image
+      })
+      .into("products")
+      .returning("id")
+      .then(id => {
+        res.send({
+          code: 1,
+          productsMessage: "A new product has been created",
+          debugMessage: `New product with id ${id} has been created`,
+          data: id
+        });
       });
+  } catch (error) {
+    res.send({
+      code: 0,
+      employeesMessage: "Not enough data fields",
+      debugMessage: "Not enough data fields",
+      data: ""
     });
+  }
 });
 
 //UPDATE
 
-router.put("/:id", (req, res, next) => {
+router.put("/:id", async (req, res, next) => {
   let idFind = parseInt(req.params.id);
-  let name = req.body.name;
-  let prize = parseFloat(req.body.prize);
-  let image = req.body.image;
-
-  if (prize != req.body.prize) prize = null;
-
   if (isNaN(idFind)) {
     res.send({
       code: 0,
@@ -95,6 +98,21 @@ router.put("/:id", (req, res, next) => {
     });
     return;
   }
+  const dataOld = await getDataForTable(idFind, "products").then(res => res);
+  if (dataOld === null) {
+    res.send({
+      code: 0,
+      Message: `No product with id ${idFind}`,
+      debugMessage: "Found no product",
+      data: ""
+    });
+    return;
+  }
+  let name = req.body.name ? req.body.name : dataOld.name;
+  let prize = parseFloat(req.body.prize);
+  let image = req.body.image ? req.body.image : dataOld.image;
+
+  if (prize != req.body.prize) prize = dataOld.prize;
 
   knex("products")
     .where({ id: idFind })

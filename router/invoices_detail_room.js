@@ -2,20 +2,20 @@ var Router = require("restify-router").Router;
 var router = new Router();
 const {
   isCorrectId,
-  getPrizeOfProduct,
   getDataForTable,
-  updatePrizeTotalForInvoice
+  getPrizeOfProduct,
+  updatePrizeTotalForInvoiceRoom
 } = require("../helper/Helper");
 
 const knex = require("../knexData").default;
 
 //GET
 router.get("", (req, res, next) => {
-  knex("invoices_detail_product")
+  knex("invoices_detail_room")
     .select("*")
     .then(invoices => {
       res.send({
-        invoicesMessage: "List of all invoices detail product",
+        invoicesMessage: "List of all invoices detail room",
         debugMessage: "Successful return ",
         data: { invoices }
       });
@@ -34,21 +34,21 @@ router.get("/:id", (req, res, next) => {
     });
     return;
   }
-  knex("invoices_detail_product")
+  knex("invoices_detail_room")
     .where({ id: id })
     .select("*")
     .then(invoices => {
       if (invoices.length === 0) {
         res.send({
           code: 0,
-          invoicesMessage: `No invoices detail product with id ${id}`,
-          debugMessage: "Found no invoices detail product",
+          invoicesMessage: `No invoices detail room with id ${id}`,
+          debugMessage: "Found no invoices detail room",
           data: { invoices }
         });
       } else
         res.send({
           code: 1,
-          invoicesMessage: "Found one invoices detail product",
+          invoicesMessage: "Found one invoices detail room",
           debugMessage: "Successful return ",
           data: { invoices }
         });
@@ -58,8 +58,8 @@ router.get("/:id", (req, res, next) => {
 //INSERT
 
 router.post("", async function(req, res, next) {
-  //id_employee
-  if (!req.body.id_invoice || !req.body.id_product) {
+  //id_product
+  if (!req.body.id_service || !req.body.id_invoice) {
     res.send({
       code: 0,
       employeesMessage: "Not enough data fields",
@@ -68,13 +68,12 @@ router.post("", async function(req, res, next) {
     });
     return;
   }
-  //id_product
-  let id_product = isNaN(parseInt(req.body.id_product))
+  let id_service = isNaN(parseInt(req.body.id_service))
     ? null
-    : parseInt(req.body.id_product);
-  if (id_product !== null) {
+    : parseInt(req.body.id_service);
+  if (id_service !== null) {
     try {
-      const result = await isCorrectId(id_product, "products")
+      const result = await isCorrectId(id_service, "services")
         .then(res => res)
         .catch(err => {
           throw new Error(err);
@@ -82,8 +81,8 @@ router.post("", async function(req, res, next) {
       if (!result) {
         res.send({
           code: 0,
-          employeesMessage: `No product with id ${id_product}`,
-          debugMessage: "Found no product",
+          employeesMessage: `No service with id ${id_service}`,
+          debugMessage: "Found no service",
           data: ""
         });
         return;
@@ -98,7 +97,7 @@ router.post("", async function(req, res, next) {
     : parseInt(req.body.id_invoice);
   if (id_invoice !== null) {
     try {
-      const result = await isCorrectId(id_invoice, "invoices_product")
+      const result = await isCorrectId(id_invoice, "invoices_room")
         .then(res => res)
         .catch(err => {
           throw new Error(err);
@@ -106,8 +105,8 @@ router.post("", async function(req, res, next) {
       if (!result) {
         res.send({
           code: 0,
-          employeesMessage: `No invoice product with id ${id_invoice}`,
-          debugMessage: "Found no invoice product",
+          employeesMessage: `No invoice room with id ${id_invoice}`,
+          debugMessage: "Found no invoice room",
           data: ""
         });
         return;
@@ -119,29 +118,27 @@ router.post("", async function(req, res, next) {
   let quantity = isNaN(parseInt(req.body.quantity))
     ? 0
     : parseInt(req.body.quantity);
-  let prize_product =
-    id_product === null
-      ? 0
-      : await getPrizeOfProduct(id_product, "products").then(res => res);
-  let total_product = prize_product * quantity * 1000;
+  let prize_service = id_service === null ? 0 : await getPrizeOfProduct(id_service,"services").then(res => res);
+
+  let total_room = prize_service * quantity * 1000;
   knex
     .insert({
+      id_service,
       id_invoice,
-      id_product,
       quantity,
-      prize_product,
-      total_product
+      prize_service,
+      total_room
     })
-    .into("invoices_detail_product")
+    .into("invoices_detail_room")
     .returning("id")
     .then(id => {
       res.send({
         code: 1,
-        invoicesMessage: "A new invoices detail product has been created",
-        debugMessage: `New invoices detail product with id ${id} has been created`,
+        invoicesMessage: "A new invoices detail room has been created",
+        debugMessage: `New invoices detail room with id ${id} has been created`,
         data: id
       });
-      updatePrizeTotalForInvoice([id_invoice]);
+      updatePrizeTotalForInvoiceRoom([id_invoice]);
     });
 });
 
@@ -158,32 +155,29 @@ router.put("/:id", async function(req, res, next) {
     });
     return;
   }
-  const dataOld = await getDataForTable(idFind, "invoices_detail_product").then(
+  const dataOld = await getDataForTable(idFind, "invoices_detail_room").then(
     res => res
   );
   if (dataOld === null) {
     res.send({
       code: 0,
-      invoicesMessage: `No invoice product with id ${idFind}`,
-      debugMessage: "Found no invoice product",
+      invoicesMessage: `No invoice detail room with id ${idFind}`,
+      debugMessage: "Found no invoice detail room",
       data: ""
     });
     return;
   }
-  //id_product
-  let id_product = isNaN(parseInt(req.body.id_product))
+  let id_service = isNaN(parseInt(req.body.id_service))
     ? null
-    : parseInt(req.body.id_product);
-  if (id_product !== null) {
+    : parseInt(req.body.id_service);
+  if (id_service !== null) {
     try {
-      const result = await isCorrectId(id_product, "products")
+      const result = await isCorrectId(id_service, "services")
         .then(res => res)
         .catch(err => {
           throw new Error(err);
         });
-      if (!result) {
-        id_product = null;
-      }
+      if (!result) id_service = null;
     } catch (error) {
       console.log(error);
     }
@@ -194,7 +188,7 @@ router.put("/:id", async function(req, res, next) {
     : parseInt(req.body.id_invoice);
   if (id_invoice !== null) {
     try {
-      const result = await isCorrectId(id_invoice, "invoices_product")
+      const result = await isCorrectId(id_invoice, "invoices_room")
         .then(res => res)
         .catch(err => {
           throw new Error(err);
@@ -209,41 +203,41 @@ router.put("/:id", async function(req, res, next) {
   let quantity = isNaN(parseInt(req.body.quantity))
     ? dataOld.quantity
     : parseInt(req.body.quantity);
-  let prize_product = await getPrizeOfProduct(
-    id_product === null ? dataOld.id_product : id_product,
-    "products"
+  let prize_service = await getPrizeOfProduct(
+    id_service === null ? dataOld.id_service : id_service,
+    "services"
   ).then(res => res);
-  let total_product = prize_product * quantity * 1000;
+  let total_room = prize_service * quantity * 1000;
   if (id_invoice === null) id_invoice = dataOld.id_invoice;
-  if (id_product === null) id_product = dataOld.id_product;
-  knex("invoices_detail_product")
+  if (id_service === null) id_service = dataOld.id_service;
+  knex("invoices_detail_room")
     .where({ id: idFind })
     .update({
+      id_service,
       id_invoice,
-      id_product,
       quantity,
-      prize_product,
-      total_product
+      prize_service,
+      total_room
     })
     .returning("id")
     .then(id => {
       if (id.length === 0)
         res.send({
           code: 0,
-          invoicesMessage: `No  product with id ${idFind}`,
-          debugMessage: "Found no product",
-          data: id
+          invoicesMessage: `No  room with id ${idFind}`,
+          debugMessage: "Found no room",
+          data: ""
         });
       else {
         res.send({
           code: 1,
-          invoicesMessage: "A new invoices product has been updated",
-          debugMessage: `New invoices product with id ${id} has been updated`,
+          invoicesMessage: "A new invoices room has been updated",
+          debugMessage: `New invoices room with id ${id} has been updated`,
           data: id
         });
         if (id_invoice !== dataOld.id_invoice)
-          updatePrizeTotalForInvoice([id_invoice, dataOld.id_invoice]);
-        else updatePrizeTotalForInvoice([id_invoice]);
+          updatePrizeTotalForInvoiceRoom([id_invoice, dataOld.id_invoice]);
+        else updatePrizeTotalForInvoiceRoom([id_invoice]);
       }
     });
 });
@@ -260,29 +254,28 @@ router.del("/:id", async function(req, res, next) {
     });
     return;
   }
-  const item = await getInvoicesDetailProduct(
-    idFind,
-    "invoices_detail_product"
-  ).then(res => res);
-  knex("invoices_detail_product")
+  const item = await getDataForTable(idFind, "invoices_detail_room").then(
+    res => res
+  );
+  knex("invoices_detail_room")
     .where({ id: idFind })
     .del()
     .then(result => {
       if (result === 0)
         res.send({
           code: result,
-          invoicesMessage: `No invoice product with id ${idFind}`,
-          debugMessage: "Found no invoice product",
+          invoicesMessage: `No invoice room with id ${idFind}`,
+          debugMessage: "Found no invoice room",
           data: ""
         });
       else {
         res.send({
           code: result,
-          invoicesMessage: `A invoice product has been deleted`,
-          debugMessage: `A invoice product with id ${idFind} has been deleted`,
+          invoicesMessage: `A invoice room has been deleted`,
+          debugMessage: `A invoice room with id ${idFind} has been deleted`,
           data: ""
         });
-        updatePrizeTotalForInvoice([item.id_invoice]);
+        updatePrizeTotalForInvoiceRoom([item.id_invoice]);
       }
     });
 });

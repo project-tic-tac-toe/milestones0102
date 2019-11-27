@@ -60,6 +60,36 @@ module.exports.updatePrizeTotalForInvoice = arrInvoiceChange => {
       });
   });
 };
+
+module.exports.updatePrizeTotalForTransaction = arrChange => {
+  arrChange.forEach(id => {
+    let total = 0;
+    let create_at = new Date();
+    knex("transactions_detail_employee")
+      .where({ id_invoice: id })
+      .select("total")
+      .then(items => {
+        if (items.length !== 0) {
+          items.forEach(t => {
+            total = total + parseInt(t.total);
+          });
+        }
+      })
+      .then(() => {
+        knex("transactions_employee")
+          .where({ id })
+          .update({
+            total,
+            create_at
+          })
+          .returning("id")
+          .then(id => {
+            if (id.length === 0) return false;
+            else return true;
+          });
+      });
+  });
+};
 // const clearNullInvoicesProduct = obj => {
 //   let clean = {};
 //   Object.keys(obj)

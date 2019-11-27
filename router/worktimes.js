@@ -1,16 +1,17 @@
 var Router = require("restify-router").Router;
 var router = new Router();
+const { isCorrectId } = require("../helper/Helper");
 let knex = require("../knexData").default;
 //GET
 
 router.get("", (req, res, next) => {
-  knex("employees")
+  knex("worktimes")
     .select("*")
-    .then(employees => {
+    .then(worktimes => {
       res.send({
-        employeesMessage: "List of all employees",
+        employeesMessage: "List of all worktimes",
         debugMessage: "Successful return ",
-        data: { employees }
+        data: { worktimes }
       });
     });
 });
@@ -27,23 +28,23 @@ router.get("/:id", (req, res, next) => {
     });
     return;
   }
-  knex("employees")
+  knex("worktimes")
     .where({ id: id })
     .select("*")
-    .then(employees => {
-      if (employees.length === 0) {
+    .then(worktimes => {
+      if (worktimes.length === 0) {
         res.send({
           code: 0,
-          employeesMessage: `No employee with id ${id}`,
-          debugMessage: "Found no employee",
-          data: { employees }
+          employeesMessage: `No worktime with id ${id}`,
+          debugMessage: "Found no worktime",
+          data: { worktimes }
         });
       } else
         res.send({
           code: 1,
-          employeesMessage: "Found one employee",
+          employeesMessage: "Found one worktime",
           debugMessage: "Successful return ",
-          data: { employees }
+          data: { worktimes }
         });
     });
 });
@@ -52,31 +53,23 @@ router.get("/:id", (req, res, next) => {
 
 router.post("", async (req, res, next) => {
   try {
-    let name = req.body.name;
-    let tel = req.body.tel;
-    let phone = isNaN(parseInt(request.body.phone))
+    let des = req.body.des ? req.body.des : null;
+    let prize = isNaN(parseInt(req.body.prize))
       ? null
-      : parseInt(request.body.phone);
-    let email = request.body.email;
-    let cmnd = isNaN(parseInt(request.body.cmnd))
-      ? null
-      : parseInt(request.body.cmnd);
+      : parseInt(req.body.prize);
 
     knex
       .insert({
-        name,
-        tel,
-        phone,
-        cmnd,
-        email
+        des,
+        prize
       })
-      .into("employees")
+      .into("worktimes")
       .returning("id")
       .then(id => {
         res.send({
           code: 1,
-          employeesMessage: "A new employee has been created",
-          debugMessage: `New employee with id ${id} has been created`,
+          employeesMessage: "A new worktime has been created",
+          debugMessage: `New worktime with id ${id} has been created`,
           data: id
         });
       });
@@ -103,50 +96,41 @@ router.put("/:id", async (req, res, next) => {
     });
     return;
   }
-
-  const dataOld = await getDataForTable(idFind, "employees").then(res => res);
+  const dataOld = await getDataForTable(idFind, "worktimes").then(res => res);
   if (dataOld === null) {
     res.send({
       code: 0,
-      Message: `No employee with id ${idFind}`,
-      debugMessage: "Found no employee",
+      Message: `No worktime with id ${idFind}`,
+      debugMessage: "Found no worktime",
       data: ""
     });
     return;
   }
-  let name = req.body.name ? req.body.name : dataOld.name;
-  let tel = req.body.tel ? req.body.tel : dataOld.tel;
-  let phone = isNaN(parseInt(request.body.phone))
-    ? dataOld.phone
-    : parseInt(request.body.phone);
-  let email = request.body.email ? req.body.email : dataOld.email;
-  let cmnd = isNaN(parseInt(request.body.cmnd))
-    ? dataOld.cmnd
-    : parseInt(request.body.cmnd);
-
-  knex("employees")
+  let des = req.body.des ? req.body.des : dataOld.des;
+  let prize = isNaN(parseInt(req.body.prize))
+    ? dataOld.prize
+    : parseInt(req.body.prize);
+  if (id_worktime === null) id_worktime = dataOld.id_worktime;
+  knex("worktimes")
     .where({ id: idFind })
     .update({
-      name,
-      tel,
-      phone,
-      cmnd,
-      email
+      des,
+      prize
     })
     .returning("id")
     .then(id => {
       if (id.length === 0)
         res.send({
           code: 0,
-          employeesMessage: `No employee with id ${idFind}`,
-          debugMessage: "Found no employee",
+          employeesMessage: `No worktime with id ${idFind}`,
+          debugMessage: "Found no worktime",
           data: id
         });
       else
         res.send({
           code: 1,
-          employeesMessage: "A new employee has been updated",
-          debugMessage: `New employee with id ${id} has been updated`,
+          employeesMessage: "A new worktime has been updated",
+          debugMessage: `New worktime with id ${id} has been updated`,
           data: id
         });
     });
@@ -165,22 +149,22 @@ router.del("/:id", (req, res, next) => {
     return;
   }
 
-  knex("employees")
+  knex("worktimes")
     .where({ id: idFind })
     .del()
     .then(result => {
       if (result === 0)
         res.send({
           code: result,
-          employeesMessage: `No employee with id ${idFind}`,
-          debugMessage: "Found no employee",
+          employeesMessage: `No worktime with id ${idFind}`,
+          debugMessage: "Found no worktime",
           data: ""
         });
       else
         res.send({
           code: result,
-          employeesMessage: `A employee has been deleted`,
-          debugMessage: `A employee with id ${idFind} has been deleted`,
+          employeesMessage: `A worktime has been deleted`,
+          debugMessage: `A worktime with id ${idFind} has been deleted`,
           data: ""
         });
     });

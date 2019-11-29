@@ -58,91 +58,90 @@ router.get("/:id", (req, res, next) => {
 //INSERT
 
 router.post("", async function(req, res, next) {
-  //id_employee
-  if (!req.body.id_invoice || !req.body.id_product) {
+  try {
+    //id_product
+    let id_product = isNaN(parseInt(req.body.id_product))
+      ? null
+      : parseInt(req.body.id_product);
+    if (id_product !== null) {
+      try {
+        const result = await isCorrectId(id_product, "products")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No product with id ${id_product}`,
+            debugMessage: "Found no product",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    let id_invoice = isNaN(parseInt(req.body.id_invoice))
+      ? null
+      : parseInt(req.body.id_invoice);
+    if (id_invoice !== null) {
+      try {
+        const result = await isCorrectId(id_invoice, "invoices_product")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No invoice product with id ${id_invoice}`,
+            debugMessage: "Found no invoice product",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    let quantity = isNaN(parseInt(req.body.quantity))
+      ? 0
+      : parseInt(req.body.quantity);
+    let prize_product =
+      id_product === null
+        ? 0
+        : await getPrizeOfProduct(id_product, "products").then(res => res);
+    let total_product = prize_product * quantity * 1000;
+    knex
+      .insert({
+        id_invoice,
+        id_product,
+        quantity,
+        prize_product,
+        total_product
+      })
+      .into("invoices_detail_product")
+      .returning("id")
+      .then(id => {
+        res.send({
+          code: 1,
+          invoicesMessage: "A new invoices detail product has been created",
+          debugMessage: `New invoices detail product with id ${id} has been created`,
+          data: id
+        });
+        updatePrizeTotalForInvoice([id_invoice]);
+      });
+  } catch (error) {
     res.send({
       code: 0,
       employeesMessage: "Not enough data fields",
       debugMessage: "Not enough data fields",
       data: ""
     });
-    return;
   }
-  //id_product
-  let id_product = isNaN(parseInt(req.body.id_product))
-    ? null
-    : parseInt(req.body.id_product);
-  if (id_product !== null) {
-    try {
-      const result = await isCorrectId(id_product, "products")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No product with id ${id_product}`,
-          debugMessage: "Found no product",
-          data: ""
-        });
-        return;
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  let id_invoice = isNaN(parseInt(req.body.id_invoice))
-    ? null
-    : parseInt(req.body.id_invoice);
-  if (id_invoice !== null) {
-    try {
-      const result = await isCorrectId(id_invoice, "invoices_product")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No invoice product with id ${id_invoice}`,
-          debugMessage: "Found no invoice product",
-          data: ""
-        });
-        return;
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  let quantity = isNaN(parseInt(req.body.quantity))
-    ? 0
-    : parseInt(req.body.quantity);
-  let prize_product =
-    id_product === null
-      ? 0
-      : await getPrizeOfProduct(id_product, "products").then(res => res);
-  let total_product = prize_product * quantity * 1000;
-  knex
-    .insert({
-      id_invoice,
-      id_product,
-      quantity,
-      prize_product,
-      total_product
-    })
-    .into("invoices_detail_product")
-    .returning("id")
-    .then(id => {
-      res.send({
-        code: 1,
-        invoicesMessage: "A new invoices detail product has been created",
-        debugMessage: `New invoices detail product with id ${id} has been created`,
-        data: id
-      });
-      updatePrizeTotalForInvoice([id_invoice]);
-    });
 });
 
 //UPDATE

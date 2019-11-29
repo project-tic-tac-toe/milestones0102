@@ -1,6 +1,6 @@
 var Router = require("restify-router").Router;
 var router = new Router();
-const { isCorrectId } = require("../helper/Helper");
+const { getDataForTable } = require("../helper/Helper");
 let knex = require("../knexData").default;
 //GET
 
@@ -110,7 +110,7 @@ router.put("/:id", async (req, res, next) => {
   let prize = isNaN(parseInt(req.body.prize))
     ? dataOld.prize
     : parseInt(req.body.prize);
-  if (id_worktime === null) id_worktime = dataOld.id_worktime;
+  
   knex("worktimes")
     .where({ id: idFind })
     .update({

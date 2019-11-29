@@ -2,12 +2,7 @@ var Router = require("restify-router").Router;
 var router = new Router();
 const { isCorrectId, getDataForTable } = require("../helper/Helper");
 let knex = require("../knexData").default;
-//GET
-// {
-//     id_employee,
-//     create_at,
-//     total
-//   }
+
 router.get("", (req, res, next) => {
   knex("transactions_employee")
     .select("*")
@@ -105,7 +100,6 @@ router.post("", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   let idFind = parseInt(req.params.id);
-  let create_at = new Date();
 
   if (isNaN(idFind)) {
     res.send({
@@ -156,8 +150,7 @@ router.put("/:id", async (req, res, next) => {
   knex("transactions_employee")
     .where({ id: idFind })
     .update({
-      id_employee,
-      create_at
+      id_employee
     })
     .returning("id")
     .then(id => {

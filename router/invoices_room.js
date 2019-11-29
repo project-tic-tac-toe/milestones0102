@@ -52,82 +52,93 @@ router.get("/:id", (req, res, next) => {
 //INSERT
 
 router.post("", async (req, res, next) => {
-  let id_customer = parseInt(req.body.id_customer);
-  let id_room = parseInt(req.body.id_room);
-  let date_arrival = null;
-  let date_department = null;
+  try {
+    let id_customer = parseInt(req.body.id_customer);
+    let id_room = parseInt(req.body.id_room);
+    let date_arrival = null;
+    let date_department = null;
 
-  let temp = Date.parse(req.body.date_arrival);
-  if (!isNaN(temp)) date_arrival = new Date(temp);
-  temp = Date.parse(req.body.date_department);
-  if (!isNaN(temp)) date_department = new Date(temp);
+    let temp = Date.parse(req.body.date_arrival);
+    if (!isNaN(temp)) date_arrival = new Date(temp);
+    temp = Date.parse(req.body.date_department);
+    if (!isNaN(temp)) date_department = new Date(temp);
 
-  let create_at = new Date();
-  let total = null;
+    let create_at = new Date();
+    let total = null;
+    let status = req.body.status ? req.body.status : "new";
 
-  if (isNaN(id_customer)) id_customer = null;
-  if (id_customer !== null) {
-    try {
-      const result = await isCorrectId(id_customer, "customers")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No customer with id ${id_customer}`,
-          debugMessage: "Found no customer",
-          data: ""
-        });
+    if (isNaN(id_customer)) id_customer = null;
+    if (id_customer !== null) {
+      try {
+        const result = await isCorrectId(id_customer, "customers")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No customer with id ${id_customer}`,
+            debugMessage: "Found no customer",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
         return;
       }
-    } catch (error) {
-      console.log(error);
-      return;
     }
-  }
 
-  if (isNaN(id_room)) id_room = null;
-  if (id_room !== null) {
-    try {
-      const result = await isCorrectId(id_room, "rooms")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No room with id ${id_room}`,
-          debugMessage: "Found no room",
-          data: ""
-        });
-        return;
+    if (isNaN(id_room)) id_room = null;
+    if (id_room !== null) {
+      try {
+        const result = await isCorrectId(id_room, "rooms")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No room with id ${id_room}`,
+            debugMessage: "Found no room",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
     }
-  }
-  knex
-    .insert({
-      id_customer,
-      id_room,
-      date_arrival,
-      date_department,
-      create_at,
-      total
-    })
-    .into("invoices_room")
-    .returning("id")
-    .then(id => {
-      res.send({
-        code: 1,
-        invoicesMessage: "A new invoices room has been created",
-        debugMessage: `New invoices room with id ${id} has been created`,
-        data: id
+    knex
+      .insert({
+        id_customer,
+        id_room,
+        date_arrival,
+        date_department,
+        create_at,
+        status,
+        total
+      })
+      .into("invoices_room")
+      .returning("id")
+      .then(id => {
+        res.send({
+          code: 1,
+          invoicesMessage: "A new invoices room has been created",
+          debugMessage: `New invoices room with id ${id} has been created`,
+          data: id
+        });
       });
+  } catch (error) {
+    res.send({
+      code: 0,
+      employeesMessage: "Not enough data fields",
+      debugMessage: "Not enough data fields",
+      data: ""
     });
+  }
 });
 
 //UPDATE
@@ -160,6 +171,7 @@ router.put("/:id", async (req, res, next) => {
   let id_room = parseInt(req.body.id_room);
   let date_arrival = null;
   let date_department = null;
+  let status = req.body.status ? req.body.status : dataOld.status;
 
   let temp = Date.parse(req.body.date_arrival);
   if (!isNaN(temp)) date_arrival = new Date(temp);
@@ -168,8 +180,6 @@ router.put("/:id", async (req, res, next) => {
   temp = Date.parse(req.body.date_department);
   if (!isNaN(temp)) date_department = new Date(temp);
   else date_department = dataOld.date_department;
-
-  let create_at = new Date();
 
   if (isNaN(id_customer)) id_customer = null;
   if (id_customer !== null) {
@@ -225,7 +235,7 @@ router.put("/:id", async (req, res, next) => {
       id_room,
       date_arrival,
       date_department,
-      create_at,
+      status,
       total: dataOld.total
     })
     .returning("id")

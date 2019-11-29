@@ -52,71 +52,80 @@ router.get("/:id", (req, res, next) => {
 //INSERT
 
 router.post("", async (req, res, next) => {
-  let id_customer = parseInt(req.body.id_customer);
-  let create_at = new Date();
-  let total = null;
+  try {
+    let id_customer = parseInt(req.body.id_customer);
+    let create_at = new Date();
+    let total = null;
 
-  if (isNaN(id_customer)) id_customer = null;
-  if (id_customer !== null) {
-    try {
-      const result = await isCorrectId(id_customer, "customers")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No customer with id ${id_customer}`,
-          debugMessage: "Found no customer",
-          data: ""
-        });
-        return;
+    if (isNaN(id_customer)) id_customer = null;
+    if (id_customer !== null) {
+      try {
+        const result = await isCorrectId(id_customer, "customers")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No customer with id ${id_customer}`,
+            debugMessage: "Found no customer",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
     }
-  }
-  let id_employee = isNaN(parseInt(req.body.id_employee))
-    ? null
-    : parseInt(req.body.id_employee);
-  if (id_employee !== null) {
-    try {
-      const result = await isCorrectId(id_employee, "employees")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No employee with id ${id_employee}`,
-          debugMessage: "Found no employee",
-          data: ""
-        });
-        return;
+    let id_employee = isNaN(parseInt(req.body.id_employee))
+      ? null
+      : parseInt(req.body.id_employee);
+    if (id_employee !== null) {
+      try {
+        const result = await isCorrectId(id_employee, "employees")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No employee with id ${id_employee}`,
+            debugMessage: "Found no employee",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
     }
-  }
-  knex
-    .insert({
-      id_customer,
-      id_employee,
-      create_at,
-      total
-    })
-    .into("invoices_product")
-    .returning("id")
-    .then(id => {
-      res.send({
-        code: 1,
-        invoicesMessage: "A new invoices product has been created",
-        debugMessage: `New invoices product with id ${id} has been created`,
-        data: id
+    knex
+      .insert({
+        id_customer,
+        id_employee,
+        create_at,
+        total
+      })
+      .into("invoices_product")
+      .returning("id")
+      .then(id => {
+        res.send({
+          code: 1,
+          invoicesMessage: "A new invoices product has been created",
+          debugMessage: `New invoices product with id ${id} has been created`,
+          data: id
+        });
       });
+  } catch (error) {
+    res.send({
+      code: 0,
+      employeesMessage: "Not enough data fields",
+      debugMessage: "Not enough data fields",
+      data: ""
     });
+  }
 });
 
 //UPDATE

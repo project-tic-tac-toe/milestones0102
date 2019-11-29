@@ -12,7 +12,7 @@ const knex = require("../knexData").default;
 //     id_transaction:
 //     id_worktime:
 //     date:
-//     prize:
+//     total:
 
 // }
 //GET
@@ -65,87 +65,90 @@ router.get("/:id", (req, res, next) => {
 
 router.post("", async function(req, res, next) {
   //id_worktime
-  if (!req.body.id_transaction || !req.body.id_worktime) {
+  try {
+    //id_worktime
+    let id_worktime = isNaN(parseInt(req.body.id_worktime))
+      ? null
+      : parseInt(req.body.id_worktime);
+    if (id_worktime !== null) {
+      try {
+        const result = await isCorrectId(id_worktime, "worktimes")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No worktime with id ${id_worktime}`,
+            debugMessage: "Found no worktime",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    let id_transaction = isNaN(parseInt(req.body.id_transaction))
+      ? null
+      : parseInt(req.body.id_transaction);
+    if (id_transaction !== null) {
+      try {
+        const result = await isCorrectId(
+          id_transaction,
+          "transactions_employee"
+        )
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No transactions employee with id ${id_transaction}`,
+            debugMessage: "Found no transactions employee",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    let prize_product =
+      id_worktime === null
+        ? 0
+        : await getPrizeOfProduct(id_worktime, "worktimes").then(res => res);
+    let total = prize_product * 1000;
+    knex
+      .insert({
+        id_transaction,
+        id_worktime,
+        date: new Date(),
+        total
+      })
+      .into("transactions_detail_employee")
+      .returning("id")
+      .then(id => {
+        res.send({
+          code: 1,
+          employeeMessage: "A new transaction detail employee has been created",
+          debugMessage: `New transaction detail employee with id ${id} has been created`,
+          data: id
+        });
+        updatePrizeTotalForTransaction([id_transaction]);
+      });
+  } catch (error) {
     res.send({
       code: 0,
       employeesMessage: "Not enough data fields",
       debugMessage: "Not enough data fields",
       data: ""
     });
-    return;
   }
-  //id_worktime
-  let id_worktime = isNaN(parseInt(req.body.id_worktime))
-    ? null
-    : parseInt(req.body.id_worktime);
-  if (id_worktime !== null) {
-    try {
-      const result = await isCorrectId(id_worktime, "worktimes")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No worktime with id ${id_worktime}`,
-          debugMessage: "Found no worktime",
-          data: ""
-        });
-        return;
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  let id_transaction = isNaN(parseInt(req.body.id_transaction))
-    ? null
-    : parseInt(req.body.id_transaction);
-  if (id_transaction !== null) {
-    try {
-      const result = await isCorrectId(id_transaction, "transactions_employee")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No transactions employee with id ${id_transaction}`,
-          debugMessage: "Found no transactions employee",
-          data: ""
-        });
-        return;
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  let prize_product =
-    id_worktime === null
-      ? 0
-      : await getPrizeOfProduct(id_worktime, "worktimes").then(res => res);
-  let total = prize_product * 1000;
-  knex
-    .insert({
-      id_transaction,
-      id_worktime,
-      date: new Date(),
-      total
-    })
-    .into("transactions_detail_employee")
-    .returning("id")
-    .then(id => {
-      res.send({
-        code: 1,
-        employeeMessage: "A new transaction detail employee has been created",
-        debugMessage: `New transaction detail employee with id ${id} has been created`,
-        data: id
-      });
-      updatePrizeTotalForTransaction([id_transaction]);
-    });
 });
 
 //UPDATE

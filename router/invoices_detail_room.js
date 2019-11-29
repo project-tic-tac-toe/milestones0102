@@ -59,87 +59,90 @@ router.get("/:id", (req, res, next) => {
 
 router.post("", async function(req, res, next) {
   //id_product
-  if (!req.body.id_service || !req.body.id_invoice) {
+  try {
+    let id_service = isNaN(parseInt(req.body.id_service))
+      ? null
+      : parseInt(req.body.id_service);
+    if (id_service !== null) {
+      try {
+        const result = await isCorrectId(id_service, "services")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No service with id ${id_service}`,
+            debugMessage: "Found no service",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    let id_invoice = isNaN(parseInt(req.body.id_invoice))
+      ? null
+      : parseInt(req.body.id_invoice);
+    if (id_invoice !== null) {
+      try {
+        const result = await isCorrectId(id_invoice, "invoices_room")
+          .then(res => res)
+          .catch(err => {
+            throw new Error(err);
+          });
+        if (!result) {
+          res.send({
+            code: 0,
+            employeesMessage: `No invoice room with id ${id_invoice}`,
+            debugMessage: "Found no invoice room",
+            data: ""
+          });
+          return;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    let quantity = isNaN(parseInt(req.body.quantity))
+      ? 0
+      : parseInt(req.body.quantity);
+    let prize_service =
+      id_service === null
+        ? 0
+        : await getPrizeOfProduct(id_service, "services").then(res => res);
+
+    let total_room = prize_service * quantity * 1000;
+    knex
+      .insert({
+        id_service,
+        id_invoice,
+        quantity,
+        prize_service,
+        total_room
+      })
+      .into("invoices_detail_room")
+      .returning("id")
+      .then(id => {
+        res.send({
+          code: 1,
+          invoicesMessage: "A new invoices detail room has been created",
+          debugMessage: `New invoices detail room with id ${id} has been created`,
+          data: id
+        });
+        updatePrizeTotalForInvoiceRoom([id_invoice]);
+      });
+  } catch (error) {
     res.send({
       code: 0,
       employeesMessage: "Not enough data fields",
       debugMessage: "Not enough data fields",
       data: ""
     });
-    return;
   }
-  let id_service = isNaN(parseInt(req.body.id_service))
-    ? null
-    : parseInt(req.body.id_service);
-  if (id_service !== null) {
-    try {
-      const result = await isCorrectId(id_service, "services")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No service with id ${id_service}`,
-          debugMessage: "Found no service",
-          data: ""
-        });
-        return;
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  let id_invoice = isNaN(parseInt(req.body.id_invoice))
-    ? null
-    : parseInt(req.body.id_invoice);
-  if (id_invoice !== null) {
-    try {
-      const result = await isCorrectId(id_invoice, "invoices_room")
-        .then(res => res)
-        .catch(err => {
-          throw new Error(err);
-        });
-      if (!result) {
-        res.send({
-          code: 0,
-          employeesMessage: `No invoice room with id ${id_invoice}`,
-          debugMessage: "Found no invoice room",
-          data: ""
-        });
-        return;
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  let quantity = isNaN(parseInt(req.body.quantity))
-    ? 0
-    : parseInt(req.body.quantity);
-  let prize_service = id_service === null ? 0 : await getPrizeOfProduct(id_service,"services").then(res => res);
-
-  let total_room = prize_service * quantity * 1000;
-  knex
-    .insert({
-      id_service,
-      id_invoice,
-      quantity,
-      prize_service,
-      total_room
-    })
-    .into("invoices_detail_room")
-    .returning("id")
-    .then(id => {
-      res.send({
-        code: 1,
-        invoicesMessage: "A new invoices detail room has been created",
-        debugMessage: `New invoices detail room with id ${id} has been created`,
-        data: id
-      });
-      updatePrizeTotalForInvoiceRoom([id_invoice]);
-    });
 });
 
 //UPDATE
